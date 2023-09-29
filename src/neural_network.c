@@ -18,6 +18,13 @@
 #include <float.h>
 #include "neural_network.h"
 #include "raylib.h"
+#include <pthread.h>
+#include <unistd.h>
+
+
+volatile int running = 1;
+
+int epoch = 0;
 
 // Window for drawing the network.
 #define WINDOW_WIDTH 650
@@ -38,7 +45,10 @@
 #define LEARNING_RATE 0.5
 
 // The patience is the number of epochs to wait before stopping.
-#define PATIENCE 10000
+#define PATIENCE 2500
+
+// The delay between epochs in microseconds. (Program)
+#define DELAY 1000
 
 // The training patterns.
 double inputs[NUM_PATTERNS][NUM_INPUTS] = {
@@ -176,8 +186,6 @@ void back_propagate(int p) {
 
 // Use raylib to draw the network.
 void draw_network(void) {
-  // Display the epoch and the learning rate in the top left corner of the screen. Put them together like Epoch , Learning Rate
-
   // Draw the input layer.
   for (int i = 0; i < NUM_INPUTS; i++) {
     // These numbers are arbitrary to where the circles are drawn.
@@ -220,6 +228,44 @@ int calculate_loss(int p) {
 /**
  * Train the network.
  */
+void *train_data(void *arg) {
+  (void) arg;  // Cast arg to void to suppress the warning
+  double best_validation_loss = DBL_MAX;
+  int patience_counter = 0;
+  if (running) {
+    for (int e = epoch; e < NUM_EPOCHS; e++) {
+      for (int p = 0; p < NUM_PATTERNS; p++) {
+        forward_propagate(p);
+        back_propagate(p);
+      }
+
+      usleep(DELAY);
+
+      TraceLog(LOG_INFO, "Epoch: %d / %d", e + 1, NUM_EPOCHS);
+
+      double validation_loss = 0.0;
+      for (int p = 0; p < NUM_PATTERNS; p++) {
+        forward_propagate(p);
+        validation_loss += calculate_loss(p);
+      }
+
+      validation_loss /= NUM_PATTERNS;
+
+      if (validation_loss < best_validation_loss) {
+        best_validation_loss = validation_loss;
+        patience_counter = 0;
+      } else {
+        patience_counter++;
+        if (patience_counter >= PATIENCE-1) {
+          break;
+        }
+      }
+      epoch++;
+    }
+  }
+  return NULL;
+}
+
 int main(void) {
   initialize_weights();
   initialize_biases();
@@ -227,64 +273,32 @@ int main(void) {
   // Draw the network.
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Neural Network");
   SetTargetFPS(60);
+  
+  pthread_t thread;
+  pthread_create(&thread, NULL, train_data, NULL);
 
-  int epoch = 0;
-  double best_validation_loss = DBL_MAX;
-  int patience_counter = 0;
-  int running = 1;
+  // TODO: I want to update the lines and circles in the draw_network function to show the weights and biases changing.
+
   while (!WindowShouldClose()) {
     BeginDrawing();
     ClearBackground(WHITE);
     draw_network();
-    EndDrawing();
-
-    // Neural network should stop when the epoch is reached.
-
-    // Train the network but update the epoch global variable. 
-    if (running) {
-      for (int e = epoch; e < NUM_EPOCHS; e++) {
-        
-        for (int p = 0; p < NUM_PATTERNS; p++) {
-          forward_propagate(p);
-          back_propagate(p);
-        }
-
-        // Update text with the epoch (e) / NUM_EPOCHS in the top left corner of the screen. 
-        TraceLog(LOG_INFO, "Epoch: %d / %d", e + 1, NUM_EPOCHS);
-        
-        double validation_loss = 0.0;
-        for (int p = 0; p < NUM_PATTERNS; p++) {
-          forward_propagate(p);
-          validation_loss += calculate_loss(p);
-        }
-        validation_loss /= NUM_PATTERNS;
-
-        if (validation_loss < best_validation_loss) {
-          best_validation_loss = validation_loss;
-          patience_counter = 0;
-        } else {
-          patience_counter++;
-          if (patience_counter >= PATIENCE-1) {
-            break;
-          }
-        }
-        epoch++;
-      }
-      running = 0;
-    }
 
     DrawText(TextFormat("Epoch: %d / %d", epoch + 1, NUM_EPOCHS), 10, 10, 20, BLACK);
-    
 
+    // Draw the input and outputs at the bottom of the screen.
     for (int p = 0; p < NUM_PATTERNS; p++) {
       forward_propagate(p);
-      // Draw the inputs and outputs. Put them at the bottom of the screen. Put them below the network.
       DrawText(TextFormat("Input: %d %d Output: %lf", (int)inputs[p][0], (int)inputs[p][1], output[0]), 10, 300 + p * 20, 20, BLACK);
     }
 
+    EndDrawing();
   }
+
+  running = 0;
+
+  pthread_join(thread, NULL);
 
   CloseWindow();
   return 0;
-
 }
