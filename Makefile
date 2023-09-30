@@ -29,5 +29,5 @@ $(EXEC): neural_network.o
 
 .PHONY: clean 
 clean:
-	/bin/rm -rf $(OBJ) $(EXEC) 
+	/bin/rm -rf $(OBJ) $(EXEC) $(BIN)
 

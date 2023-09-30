@@ -1,8 +1,3 @@
-// Neural Network for the logical gate AND function
-
-
-// This is a simple neural network that learns the logical AND function. This is using the sigmoid activation function. 
-
 /**
  * Refences:
  * https://www.geeksforgeeks.org/implementation-of-artificial-neural-network-for-and-logic-gate-with-2-bit-binary-input/
@@ -21,11 +16,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-
-volatile int running = 1;
-
-int epoch = 0;
-
 // Window for drawing the network.
 #define WINDOW_WIDTH 650
 #define WINDOW_HEIGHT 400
@@ -33,19 +23,19 @@ int epoch = 0;
 // The number of inputs, outputs, and hidden nodes.
 #define NUM_INPUTS 2
 #define NUM_OUTPUTS 1
-#define NUM_HIDDEN 2
+#define NUM_HIDDEN 1
 
 // A pattern is a set of inputs and outputs.
 #define NUM_PATTERNS 4
 
 // An epoch is a complete pass through the training patterns.
-#define NUM_EPOCHS 10000
+#define NUM_EPOCHS 5000
 
 // The learning rate.
-#define LEARNING_RATE 0.5
+#define LEARNING_RATE 0.1
 
 // The patience is the number of epochs to wait before stopping.
-#define PATIENCE 2500
+#define PATIENCE 5000
 
 // The delay between epochs in microseconds. (Program)
 #define DELAY 1000
@@ -74,12 +64,18 @@ double hidden_biases[NUM_HIDDEN];
 double output_bias[NUM_OUTPUTS];
 double output[NUM_OUTPUTS];
 
+
+volatile int running = 1;
+
+int epoch = 0;
+
 /**
  * The sigmoid function.
  * @param x The input.
  * @return The output.
  */
-double sigmoid(double x) {
+double sigmoid(double x) 
+{
   return 1 / (1 + exp(-x));
 }
 
@@ -88,7 +84,8 @@ double sigmoid(double x) {
  * @param x The input.
  * @return The output.
  */
-double sigmoid_derivative(double x) {
+double sigmoid_derivative(double x) 
+{
   return x * (1 - x);
 }
 
@@ -129,7 +126,8 @@ void initialize_biases(void)
  * Forward propagate the inputs.
  * @param p The pattern index.
  */
-void forward_propagate(int p) {
+void forward_propagate(int p) 
+{
   // Calculate the outputs of the hidden layer.
   for (int i = 0; i < NUM_HIDDEN; i++) {
     hidden[i] = 0.0;
@@ -158,7 +156,8 @@ void forward_propagate(int p) {
  * Back propagate the errors.
  * @param p The pattern index.
  */
-void back_propagate(int p) {
+void back_propagate(int p) 
+{
   double error;
   // Update the weights and biases for the output layer.
   for (int i = 0; i < NUM_OUTPUTS; i++) {
@@ -184,40 +183,83 @@ void back_propagate(int p) {
   }
 }
 
-// Use raylib to draw the network.
-void draw_network(void) {
+// The brightest lines (i.e., the lines with the highest absolute weights) are the most used connections in the neural network. Conversely, the darker lines (i.e., the lines with the lowest absolute weights) are the least used connections
+Color weight_to_color(double weight) 
+{
+  // Map the weight to a color. For example, we could use a simple linear mapping
+  // from [-1, 1] to [0, 1] and then map this to the colors grey and orange.
+  double value = (weight + 1.0) / 2.0;
+  int r = (int)(255 * value);
+  int g = (int)(255 * (1 - value));
+  int b = 0;
+  return (Color){r, g, b, 255};
+}
+
+
+int is_neuron_used(int i) 
+{
+  // Return 1 if the neuron is used, otherwise return 0.
+  for (int j = 0; j < NUM_HIDDEN; j++) {
+    if (hidden_weights[i][j] != 0) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int is_weight_used(int i, int j) 
+{
+  // Return 1 if the weight is used, otherwise return 0.
+  if (hidden_weights[i][j] != 0) {
+    return 1;
+  }
+  return 0;
+}
+
+void draw_network(double *activations) 
+{
   // Draw the input layer.
   for (int i = 0; i < NUM_INPUTS; i++) {
-    // These numbers are arbitrary to where the circles are drawn.
-    DrawCircle(100, 100 + i * 100, 30, RED);
+    // Use the activation value to determine the color.
+    Color color = weight_to_color(activations[i]);
+    DrawCircle(100, 100 + i * 100, 30, color);
   }
   // Draw the hidden layer.
   for (int i = 0; i < NUM_HIDDEN; i++) {
-    DrawCircle(300, 100 + i * 100, 30, BLUE);
+    // Use the activation value to determine the color.
+    Color color = weight_to_color(activations[NUM_INPUTS + i]);
+    DrawCircle(300, 100 + i * 100, 30, color);
   }
   // Draw the output layer.
   for (int i = 0; i < NUM_OUTPUTS; i++) {
-    DrawCircle(500, 100 + i * 100, 30, GREEN);
+    // Use the activation value to determine the color.
+    Color color = weight_to_color(activations[NUM_INPUTS + NUM_HIDDEN + i]);
+    DrawCircle(500, 100 + i * 100, 30, color);
   }
   // Draw the weights.
   for (int i = 0; i < NUM_INPUTS; i++) {
     for (int j = 0; j < NUM_HIDDEN; j++) {
-      DrawLine(100 + 30, 100 + i * 100, 300 - 30, 100 + j * 100, GRAY);
+      // Use the weight value to determine the color.
+      Color color = weight_to_color(hidden_weights[j][i]);
+      DrawLineEx((Vector2){100 + 30, 100 + i * 100}, (Vector2){300 - 30, 100 + j * 100}, 2.0, color);
     }
   }
   for (int i = 0; i < NUM_HIDDEN; i++) {
     for (int j = 0; j < NUM_OUTPUTS; j++) {
-      DrawLine(300 + 30, 100 + i * 100, 500 - 30, 100 + j * 100, GRAY);
+      // Use the weight value to determine the color.
+      Color color = weight_to_color(output_weights[i][j]);
+      DrawLineEx((Vector2){300 + 30, 100 + i * 100}, (Vector2){500 - 30, 100 + j * 100}, 2.0, color);
     }
   }
 
-  // Draw labels or text annotations.
-  DrawText("Input Layer", 80, 60, 20, BLACK);
-  DrawText("Hidden Layer", 280, 60, 20, BLACK);
-  DrawText("Output Layer", 480, 60, 20, BLACK);
+  // Draw the labels.
+  DrawText("Input", 100 - 30, 100 - 30, 20, BLACK);
+  DrawText("Hidden", 300 - 30, 100 - 30, 20, BLACK);
+  DrawText("Output", 500 - 30, 100 - 30, 20, BLACK);
 }
 
-int calculate_loss(int p) {
+int calculate_loss(int p) 
+{
   double loss = 0.0;
   for (int i = 0; i < NUM_OUTPUTS; i++) {
     loss += pow(outputs[p][i] - output[i], 2);
@@ -228,7 +270,8 @@ int calculate_loss(int p) {
 /**
  * Train the network.
  */
-void *train_data(void *arg) {
+void *train_data(void *arg) 
+{
   (void) arg;  // Cast arg to void to suppress the warning
   double best_validation_loss = DBL_MAX;
   int patience_counter = 0;
@@ -241,7 +284,7 @@ void *train_data(void *arg) {
 
       usleep(DELAY);
 
-      TraceLog(LOG_INFO, "Epoch: %d / %d", e + 1, NUM_EPOCHS);
+      // TraceLog(LOG_INFO, "Epoch: %d / %d", e + 1, NUM_EPOCHS);
 
       double validation_loss = 0.0;
       for (int p = 0; p < NUM_PATTERNS; p++) {
@@ -273,16 +316,28 @@ int main(void) {
   // Draw the network.
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Neural Network");
   SetTargetFPS(60);
-  
+
   pthread_t thread;
   pthread_create(&thread, NULL, train_data, NULL);
 
-  // TODO: I want to update the lines and circles in the draw_network function to show the weights and biases changing.
-
   while (!WindowShouldClose()) {
     BeginDrawing();
-    ClearBackground(WHITE);
-    draw_network();
+    ClearBackground(RAYWHITE);
+
+    double activations[NUM_INPUTS + NUM_HIDDEN + NUM_OUTPUTS];
+    for (int i = 0; i < NUM_INPUTS; i++) {
+      activations[i] = 0.0;
+      for (int j = 0; j < NUM_HIDDEN; j++) {
+        activations[i] += hidden_weights[i][j] * hidden[j];
+      }
+    }
+    for (int i = 0; i < NUM_HIDDEN; i++) {
+      activations[NUM_INPUTS + i] = hidden[i];
+    }
+    for (int i = 0; i < NUM_OUTPUTS; i++) {
+      activations[NUM_INPUTS + NUM_HIDDEN + i] = output[i];
+    }
+    draw_network(activations);
 
     DrawText(TextFormat("Epoch: %d / %d", epoch + 1, NUM_EPOCHS), 10, 10, 20, BLACK);
 
@@ -295,10 +350,9 @@ int main(void) {
     EndDrawing();
   }
 
+  // Close the thread when the window closes.
   running = 0;
-
   pthread_join(thread, NULL);
-
   CloseWindow();
   return 0;
 }
