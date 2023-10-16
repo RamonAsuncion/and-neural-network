@@ -1,12 +1,3 @@
-/**
- * Refences:
- * https://www.geeksforgeeks.org/implementation-of-artificial-neural-network-for-and-logic-gate-with-2-bit-binary-input/
- * https://cprimozic.net/blog/boolean-logic-with-neural-networks/
- * ChatGPT for propagate implementation and raylib for drawing the network.
- * https://www.youtube.com/watch?v=Sz-lXj0Ha6E
- * https://github.com/Frixoe/xor-neural-network/blob/master/XOR-Net-Notebook.ipynb
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
