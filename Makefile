@@ -24,7 +24,7 @@ neural_network.o: neural_network.c neural_network.h
 	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
 
 $(EXEC): neural_network.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BIN)/$@ $(OBJ)/$^ -lm
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BIN)/$@ $(OBJ)/$^
 
 
 .PHONY: clean 
