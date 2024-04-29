@@ -1,6 +1,6 @@
 CC=gcc -I./include
 CFLAGS=-Wall -Wextra -Werror -pedantic -std=c99 -g
-LDFLAGS=-lm -lraylib
+LDFLAGS=-lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 INC=./include
 SRC=./src
