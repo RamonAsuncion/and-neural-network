@@ -20,11 +20,14 @@ mkpaths:
 neural_network.o: neural_network.c config.h
 	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
 
+run: neural_network
+	./bin/neural_network
+
 $(EXEC): neural_network.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BIN)/$@ $(OBJ)/$^
 
 
-.PHONY: clean
 clean:
 	/bin/rm -rf $(OBJ) $(EXEC) $(BIN)
 
+.PHONY: clean run
