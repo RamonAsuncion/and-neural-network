@@ -1,4 +1,4 @@
-CC=gcc -I./include
+CC=gcc -I./include 
 CFLAGS=-Wall -Wextra -Werror -pedantic -std=c99 -g
 LDFLAGS=-lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 

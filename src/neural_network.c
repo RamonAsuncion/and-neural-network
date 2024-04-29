@@ -187,7 +187,7 @@ void *train_data(void *arg)
         back_propagate(p);
       }
 
-      sleep(DELAY);
+      sleep(RENDER_DELAY/1e6);
 
       double validation_loss = 0.0;
       for (int p = 0; p < NUM_PATTERNS; ++p) {
