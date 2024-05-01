@@ -24,7 +24,7 @@ run: neural_network
 	./bin/neural_network
 
 $(EXEC): neural_network.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BIN)/$@ $(OBJ)/$^
+	$(CC) $(CFLAGS) -o $(BIN)/$@ $(OBJ)/$^ $(LDFLAGS)
 
 
 clean:
