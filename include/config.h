@@ -4,7 +4,7 @@
 // Raylib
 #define WINDOW_WIDTH 650
 #define WINDOW_HEIGHT 400
-#define RENDER_DELAY 1 // microseconds
+#define RENDER_DELAY 1 
 
 // Training Parameters
 #define NUM_INPUTS 2
